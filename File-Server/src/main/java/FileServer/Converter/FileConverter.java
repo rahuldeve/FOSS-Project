@@ -1,6 +1,6 @@
 package FileServer.Converter;
 
-import logger.DataWrappers.MetadataWrapper;
+import FileServer.DataWrappers.MetadataWrapper;
 
 import java.io.InputStream;
 import java.util.List;

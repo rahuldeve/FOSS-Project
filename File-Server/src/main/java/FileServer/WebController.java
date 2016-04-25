@@ -1,13 +1,20 @@
 package FileServer;
 
+import FileServer.Converter.FileConverter;
+import FileServer.Converter.MIMEResolver;
+import FileServer.DataWrappers.MetadataWrapper;
+import FileServer.Index.IndexInterface;
+import FileServer.StorageInterface.FileStorageInterface;
+import org.apache.tika.Tika;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
@@ -19,6 +26,32 @@ import java.util.stream.Collectors;
  */
 @RestController
 public class WebController {
+
+    @Resource(name = "elasticSearchBean")
+    IndexInterface indexInterface;
+
+    @Resource(name = "fileStorageBean")
+    FileStorageInterface fileStorageInterface;
+
+
+    @Autowired
+    MIMEResolver mimeResolver;
+
+
+    @RequestMapping(value = "/getFile/{filename:.+}", method = RequestMethod.GET, produces = MediaType.ALL_VALUE)
+    public ResponseEntity<byte[]> getFile(@PathVariable("filename") String filename) {
+
+
+        Tika tika = new Tika();
+        byte bytes[] = fileStorageInterface.retrieveCompressedFile(filename);
+        String mimeType = tika.detect(bytes, filename);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.valueOf(mimeType));
+        headers.setContentDispositionFormData("attachment", filename);
+
+        return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+    }
 
     @RequestMapping(value = "/indexFile", method = RequestMethod.POST)
     public ResponseEntity<String> indexFile(@RequestParam("file") MultipartFile file, @RequestParam("filename") String filename,

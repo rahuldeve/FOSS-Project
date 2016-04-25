@@ -1,8 +1,8 @@
 package FileServer.Converter;
 
-import logger.Converter.TikaConfig.CollectingEmbeddedResourceHandler;
-import logger.DataWrappers.FileMetadataWrapper;
-import logger.DataWrappers.MetadataWrapper;
+import FileServer.Converter.TikaConfig.CollectingEmbeddedResourceHandler;
+import FileServer.DataWrappers.FileMetadataWrapper;
+import FileServer.DataWrappers.MetadataWrapper;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.extractor.ParserContainerExtractor;
 import org.apache.tika.io.TikaInputStream;
