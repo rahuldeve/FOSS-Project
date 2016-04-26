@@ -26,10 +26,11 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile("org.apache.pdfbox:pdfbox:1.8.10")
+
     compile("com.mashape.unirest:unirest-java:1.4.7")
     compile("org.springframework.boot:spring-boot-starter-web")
     compile("org.apache.tika:tika-parsers:1.11")
+    compile("org.springframework.boot:spring-boot-starter-thymeleaf")
 }
 
 task wrapper(type: Wrapper) {

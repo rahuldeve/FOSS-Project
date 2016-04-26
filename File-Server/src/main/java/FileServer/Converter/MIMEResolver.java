@@ -27,17 +27,6 @@ public class MIMEResolver {
 
         //somehow load stuff from a file like a plugin ?
         mimeTable = new HashMap<>();
-
-        //mimeTable.put("application/pdf", new PdfFileConverter());
-        mimeTable.put("text/plain", new TextFileConverter());
-
-        //entries to handle .jpg files
-        mimeTable.put("image/jpeg", new ImageConverter());
-        mimeTable.put("image/pjpeg", new ImageConverter());
-        mimeTable.put("image/png", new ImageConverter());
-
-
-
         mimeTable.put(DefaultFileConverterHandle, new DefaultFileConverter());
 
     }

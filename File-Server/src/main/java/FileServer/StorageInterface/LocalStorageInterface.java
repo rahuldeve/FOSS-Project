@@ -1,7 +1,5 @@
 package FileServer.StorageInterface;
 
-
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -9,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,12 +18,7 @@ import java.util.logging.Logger;
 @Service("localStorageBean")
 public class LocalStorageInterface implements FileStorageInterface {
 
-    @Value("${uncompressed}")
-    public String uncompressedLocation;
-
-    @Value("${compressed}")
-    public String compressedLocation;
-
+    public String uncompressedLocation = "/foss/uploads/";
 
 
     @Override
@@ -47,35 +41,15 @@ public class LocalStorageInterface implements FileStorageInterface {
 
 
     @Override
-    public ResponseEntity<String> storeCompressedFile(MultipartFile file, String filename) {
-
-        File zipFile = new File(compressedLocation + filename + ".zip");
-        GZIPInterface.compressFile(file, filename, zipFile);
-        Logger.getLogger("LocalStorageInterface").log(Level.INFO, "Storing file : " + filename);
-
-        return new ResponseEntity<>("File Stored:" + filename, HttpStatus.CREATED);
-
-    }
-
-
-
-
-    @Override
     public byte[] retrieveFile(String filename) {
 
-        //TODO : fill this later
+        File file = new File(uncompressedLocation + filename);
+        try {
+            return Files.readAllBytes(file.toPath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return null;
     }
-
-    @Override
-    public byte[] retrieveCompressedFile(String filename) {
-
-        //TODO : See if you can improve this
-        //TODO : put some logging here
-        byte[] bytes = GZIPInterface.decompressFile(new File(compressedLocation + filename + ".zip"), filename);
-        return bytes;
-
-    }
-
 
 }

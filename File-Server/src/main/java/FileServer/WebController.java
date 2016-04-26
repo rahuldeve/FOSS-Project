@@ -3,15 +3,20 @@ package FileServer;
 import FileServer.Converter.FileConverter;
 import FileServer.Converter.MIMEResolver;
 import FileServer.DataWrappers.MetadataWrapper;
-import FileServer.Index.IndexInterface;
+import FileServer.ElasticSearch.ElasticSearchRetrievingInterface;
+import FileServer.Index.ElasticSearchStoringInterface;
+import FileServer.Model.Query.QueryWrapper;
+import FileServer.Model.Result.DocumentResultEntity;
+import FileServer.Model.Result.ResultsWrapper;
 import FileServer.StorageInterface.FileStorageInterface;
-import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
@@ -22,15 +27,18 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Created by rahul on 4/25/16.
+ * Created by rahul on 4/26/16.
  */
-@RestController
+@Controller
 public class WebController {
 
-    @Resource(name = "elasticSearchBean")
-    IndexInterface indexInterface;
+    @Resource(name = "elasticSearchStoringBean")
+    ElasticSearchStoringInterface elasticSearchStoringInterface;
 
-    @Resource(name = "fileStorageBean")
+    @Resource(name = "elasticSearchRetrievingBean")
+    ElasticSearchRetrievingInterface elasticSearchRetrievingInterface;
+
+    @Resource(name = "localStorageBean")
     FileStorageInterface fileStorageInterface;
 
 
@@ -38,22 +46,34 @@ public class WebController {
     MIMEResolver mimeResolver;
 
 
-    @RequestMapping(value = "/getFile/{filename:.+}", method = RequestMethod.GET, produces = MediaType.ALL_VALUE)
-    public ResponseEntity<byte[]> getFile(@PathVariable("filename") String filename) {
-
-
-        Tika tika = new Tika();
-        byte bytes[] = fileStorageInterface.retrieveCompressedFile(filename);
-        String mimeType = tika.detect(bytes, filename);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.valueOf(mimeType));
-        headers.setContentDispositionFormData("attachment", filename);
-
-        return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+    @RequestMapping("/greeting")
+    public String greeting(@RequestParam(value="name", required=false, defaultValue="World") String name, Model model) {
+        model.addAttribute("name", name);
+        return "greeting";
     }
 
-    @RequestMapping(value = "/indexFile", method = RequestMethod.POST)
+    @RequestMapping(value = "/query")
+    public String queryDocument(@RequestParam(required = false) String query, Model model){
+
+        if(query == null){
+            return "results";
+        }
+
+        QueryWrapper wrapper = new QueryWrapper();
+        wrapper.extractedContentFeild = query;
+        ResultsWrapper<DocumentResultEntity> results = elasticSearchRetrievingInterface.queryDocument(wrapper);
+
+
+        model.addAttribute("results", results);
+        return "results";
+    }
+
+    @RequestMapping("/upload")
+    public String gen(){
+        return "upload";
+    }
+
+    @RequestMapping(value = "/upload", method = RequestMethod.POST)
     public ResponseEntity<String> indexFile(@RequestParam("file") MultipartFile file, @RequestParam("filename") String filename,
                                             @RequestParam(required = false) List<String> tags,
                                             @RequestParam(required = false) String from, @RequestParam(required = false) String to) {
@@ -78,7 +98,7 @@ public class WebController {
             if(metadataWrappers != null) {
 
                 List<ResponseEntity<String>> failedEntries = metadataWrappers.stream()
-                        .map(indexInterface::indexFile)
+                        .map(elasticSearchStoringInterface::indexFile)
                         .filter(response -> response.getStatusCode() != HttpStatus.CREATED)
                         .collect(Collectors.toList());
 
@@ -96,4 +116,9 @@ public class WebController {
             return new ResponseEntity<>("file empty", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
+
+
+
 }

@@ -1,0 +1,28 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Getting Started: Serving Web Content</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+
+<form>
+    <input type="text" name="query"></input>
+    <input type="submit" value="Search"></input>
+</form>
+
+
+
+<div th:if="${results != null}">
+    <p th:text="${results.resultNum} + ' results'"></p>
+    <div th:each="res, iterationStatus : ${results.resultList}">
+        <a th:href="${res.url}"><p th:text="${res.filename}"></p></a>
+    </div>
+</div>
+
+
+
+
+
+</body>
+</html>

@@ -22,15 +22,15 @@ import java.util.logging.Logger;
  */
 
 
-@Service("elasticSearchBean")
-public class ElasticSearchInterface implements IndexInterface {
+@Service("elasticSearchStoringBean")
+public class ElasticSearchStoringInterface implements IndexInterface {
 
     public String fileIndexURL = "http://localhost:9200/fossuploads/files/";
 
     @Autowired
     private ObjectMapper jacksonObjectMapper;
 
-    public ElasticSearchInterface() {
+    public ElasticSearchStoringInterface() {
 
         Unirest.setObjectMapper(new com.mashape.unirest.http.ObjectMapper() {
             @Override

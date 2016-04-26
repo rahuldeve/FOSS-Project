@@ -1,11 +1,17 @@
 package FileServer;
 
-import logger.Converter.FileConverter;
-import logger.Converter.MIMEResolver;
-import logger.DataWrappers.MessageDataWrapper;
-import logger.DataWrappers.MetadataWrapper;
-import logger.Index.IndexInterface;
+import FileServer.Converter.FileConverter;
+import FileServer.Converter.MIMEResolver;
+import FileServer.DataWrappers.MetadataWrapper;
+import FileServer.ElasticSearch.ElasticSearchRetrievingInterface;
+import FileServer.Index.ElasticSearchStoringInterface;
+import FileServer.Model.Query.QueryWrapper;
+import FileServer.Model.Result.DocumentResultEntity;
+import FileServer.Model.Result.ResultsWrapper;
+import FileServer.StorageInterface.FileStorageInterface;
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,18 +25,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-
 /**
- * Created by rahul on 16/12/15.
+ * Created by rahul on 4/25/16.
  */
-
 @RestController
-public class MessageController {
+public class RESTController {
 
-    @Resource(name = "elasticSearchBean")
-    IndexInterface indexInterface;
+    @Resource(name = "elasticSearchStoringBean")
+    ElasticSearchStoringInterface elasticSearchStoringInterface;
 
-    @Resource(name = "fileStorageBean")
+    @Resource(name = "elasticSearchRetrievingBean")
+    ElasticSearchRetrievingInterface elasticSearchRetrievingInterface;
+
+    @Resource(name = "localStorageBean")
     FileStorageInterface fileStorageInterface;
 
 
@@ -38,11 +45,32 @@ public class MessageController {
     MIMEResolver mimeResolver;
 
 
-    @RequestMapping(value = "/indexMessage", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity<String> indexMessage(@RequestBody MessageDataWrapper messageDataWrapper) {
+    @RequestMapping(value = "/queryFile")
+    public ResultsWrapper<DocumentResultEntity> queryDocument(@RequestParam String query){
 
-        //index message
-        return indexInterface.indexMessage(messageDataWrapper);
+        QueryWrapper wrapper = new QueryWrapper();
+        wrapper.extractedContentFeild = query;
+        ResultsWrapper<DocumentResultEntity> results = elasticSearchRetrievingInterface.queryDocument(wrapper);
+        return results;
+    }
+
+
+
+
+
+
+
+    @RequestMapping(value = "/getFile/{filename:.+}", method = RequestMethod.GET, produces = MediaType.ALL_VALUE)
+    public ResponseEntity getFile(@PathVariable("filename") String filename) {
+
+        Tika tika = new Tika();
+        byte bytes[] = fileStorageInterface.retrieveFile(filename);
+        String mimeType = tika.detect(bytes, filename);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.valueOf(mimeType));
+        headers.setContentDispositionFormData("attachment", filename);
+
+        return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
 
     }
 
@@ -71,7 +99,7 @@ public class MessageController {
             if(metadataWrappers != null) {
 
                 List<ResponseEntity<String>> failedEntries = metadataWrappers.stream()
-                        .map(indexInterface::indexFile)
+                        .map(elasticSearchStoringInterface::indexFile)
                         .filter(response -> response.getStatusCode() != HttpStatus.CREATED)
                         .collect(Collectors.toList());
 
